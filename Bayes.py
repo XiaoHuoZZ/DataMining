@@ -6,7 +6,7 @@ import pandas as pd
 import csv
 import random
 import re
-from multiprocessing import Pool,Value
+from multiprocessing import Pool,Manager,Lock
 import time
 
 data_path='./data/data.csv'
@@ -45,12 +45,7 @@ def partition():
 
 
 def pretreatment():
-    stop_list=[]
     words_list=[]
-    #加载停用词表
-    with open('stop_words.txt','r') as f:
-        for line in f:
-            stop_list.append(line.strip('\n'))
     with open('./data/train.csv', 'r',encoding='utf-8') as f:
         data = pd.read_csv(f)
         size = data.index.size
@@ -88,21 +83,15 @@ def pretreatment():
     print(words_list)
     return
 
-def handle(data,i,j):
-    stop_list=[]
+def handle(data,m,n,stop_list,lock):
     docs = []
-    #加载停用词表
-    with open('stop_words.txt','r') as f:
-        for line in f:
-            stop_list.append(line.strip('\n'))
-        f.close()
-    for i in range(i,j):
-        t = data.iloc[i,:]['content']
+    for i in range(m,n):
+        t = data[i]
         s = re.sub(u'[^\u4e00-\u9fa5|\s]', "", t).replace('\u3000','')
         jlist = jieba.lcut(s, cut_all=True)  #为每个文档分词
         newList = []
         for wd in jlist:
-            if j not in stop_list:
+            if wd not in stop_list:
                 newList.append(wd)
         docs.append(newList)
     return docs
@@ -111,20 +100,30 @@ def handle(data,i,j):
 if __name__ == '__main__':
     t_start=time.time()
     res_list=[]
-    l = 0
-    pool = Pool(12)
+    pool = Pool(11)
+    stop_list=[]
+    #加载停用词表
+    with open('stop_words.txt','r') as f:
+        for line in f:
+            stop_list.append(line.strip('\n'))
+        f.close()
     with open('./data/train.csv', 'r',encoding='utf-8') as f:
-        data = pd.read_csv(f)
-        size = data.index.size
+        manager = Manager()
+        reader = csv.reader(f)
+        data = manager.list()
+        lock = manager.Lock()
+        for i,row in enumerate(reader):
+            if i != 0:
+                data.append(row[2])
+        print('load')
+        size = len(data)
         ratio = 10000
         t = size//ratio
         offset = size-t*ratio
-        d = Value('DataFrame')
-        print('load')
         for i in range(t):
-            res = pool.apply_async(func=handle, args=(data[i*ratio:(i+1)*ratio],0,ratio,))
+            res = pool.apply_async(func=handle, args=(data,i*ratio,(i+1)*ratio,stop_list,lock,))
             res_list.append(res)
-        res = pool.apply_async(func=handle, args=(data[t*ratio:t*ratio+offset],0,offset,))
+        res = pool.apply_async(func=handle, args=(data,t*ratio,t*ratio+offset,stop_list,lock,))
         res_list.append(res)
         # res = pool.map(handle,[data,data,data,data,data])    
         f.close
