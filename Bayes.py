@@ -1,5 +1,4 @@
 from math import fabs
-from pickle import TRUE
 import jieba
 import numpy as py
 import pandas as pd
@@ -83,25 +82,25 @@ def pretreatment():
     print(words_list)
     return
 
-def handle(data,m,n,stop_list,lock):
-    docs = []
+def handle(data,m,n,stop_list):
     for i in range(m,n):
         t = data[i]
         s = re.sub(u'[^\u4e00-\u9fa5|\s]', "", t).replace('\u3000','')
         jlist = jieba.lcut(s, cut_all=True)  #为每个文档分词
-        newList = []
+        doc = []
         for wd in jlist:
             if wd not in stop_list:
-                newList.append(wd)
-        docs.append(newList)
-    return docs
+                doc.append(wd)
+        data[i] =  ','.join(doc)
     
 
 if __name__ == '__main__':
     t_start=time.time()
     res_list=[]
     pool = Pool(11)
+    words_list = []
     stop_list=[]
+    category = []
     #加载停用词表
     with open('stop_words.txt','r') as f:
         for line in f:
@@ -111,19 +110,20 @@ if __name__ == '__main__':
         manager = Manager()
         reader = csv.reader(f)
         data = manager.list()
-        lock = manager.Lock()
         for i,row in enumerate(reader):
             if i != 0:
                 data.append(row[2])
+                category.append(row[0])
+
         print('load')
         size = len(data)
         ratio = 10000
         t = size//ratio
         offset = size-t*ratio
         for i in range(t):
-            res = pool.apply_async(func=handle, args=(data,i*ratio,(i+1)*ratio,stop_list,lock,))
+            res = pool.apply_async(func=handle, args=(data,i*ratio,(i+1)*ratio,stop_list,))
             res_list.append(res)
-        res = pool.apply_async(func=handle, args=(data,t*ratio,t*ratio+offset,stop_list,lock,))
+        res = pool.apply_async(func=handle, args=(data,t*ratio,t*ratio+offset,stop_list,))
         res_list.append(res)
         # res = pool.map(handle,[data,data,data,data,data])    
         f.close
@@ -131,8 +131,11 @@ if __name__ == '__main__':
     
     pool.close()
     pool.join()
+
+
     t_end=time.time()
     time=t_end-t_start
+
     print('complete')
     print ('the program time is :%s' %time)
 
