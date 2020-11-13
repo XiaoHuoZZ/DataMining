@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from multiprocessing import Process
 from multiprocessing import Pool
+from os.path import join
 import time
 import random
 from time import sleep
@@ -12,17 +13,12 @@ def f(x):
 
 
 if __name__ == '__main__':
-    # res_list=[]
-    # pool = Pool(5)
-    # for i in range(10):
-    #     res = pool.apply_async(func=f, args=(i,))
-    #     res_list.append(res)
-
-    # pool.close()
-    # pool.join()
-
-    # print(res_list)
-
-    for i in range(10):
-        print(i)
+    data = ['a,b,c','1,2,3',',12,']
+    with open('words_list','w') as f:
+        f.writelines(','.join(data))
+        f.close
+    # with open('words_list') as f:
+    #     s = f.read()
+    #     ab = s.split(',')
+    #     print(ab)
         
