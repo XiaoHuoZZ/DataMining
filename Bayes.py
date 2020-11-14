@@ -1,15 +1,15 @@
 from math import fabs
 from os import write
 import jieba_fast as jieba
-import numpy as py
+import numpy as np
 import pandas as pd
 import csv
 import random
 import re
-from multiprocessing import Pool,Manager,Lock
+from multiprocessing import Pool,Manager,Lock,Array
 import time as tu
 
-data_path='./data/data.csv'
+
 
 def random_index(rate):
     # """随机变量的概率函数"""
@@ -24,7 +24,7 @@ def random_index(rate):
             break
     return index
 
-def partition():
+def partition(data_path):
     with open(data_path, 'r',encoding='utf-8') as f:
         reader = csv.reader(f)
         tr=open('./data/train.csv', 'a', newline='',encoding='utf-8')
@@ -43,12 +43,12 @@ def partition():
     print('划分完毕')
 
 
-def handle(data,m,n,stop_list):
+def handle_fenci(data,m,n,stop_list):
     part_list = []
     for i in range(m,n):
         t = data[i]
         s = re.sub(u'[^\u4e00-\u9fa5|\s]', "", t).replace('\u3000','')
-        jlist = jieba.lcut(s, cut_all=True)  #为每个文档分词
+        jlist = jieba.lcut(s, cut_all=False)  #为每个文档分词
         doc = []
         for wd in jlist:
             part_list.append(wd)
@@ -58,6 +58,9 @@ def handle(data,m,n,stop_list):
     print('done:'+str(n))
     return list(set(part_list))
     
+def handle_transform():
+    return
+
 def pretreatment():
     t_start=tu.time()
     res_list=[]
@@ -85,9 +88,9 @@ def pretreatment():
         t = size//ratio
         offset = size-t*ratio
         for i in range(t):
-            res = pool.apply_async(func=handle, args=(data,i*ratio,(i+1)*ratio,stop_list,))
+            res = pool.apply_async(func=handle_fenci, args=(data,i*ratio,(i+1)*ratio,stop_list,))
             res_list.append(res)
-        res = pool.apply_async(func=handle, args=(data,t*ratio,t*ratio+offset,stop_list,))
+        res = pool.apply_async(func=handle_fenci, args=(data,t*ratio,t*ratio+offset,stop_list,))
         res_list.append(res)
         # res = pool.map(handle,[data,data,data,data,data])    
         f.close
@@ -113,6 +116,7 @@ def pretreatment():
     #保存处理结果
     with open('temp_data.csv','w',encoding='utf-8') as f:
         writer = csv.writer(f)
+        write.writerow(['doc','category'])
         for i in range(size):
             row = [data[i],category[i]]
             writer.writerow(row)
@@ -131,7 +135,26 @@ def pretreatment():
     print('complete')
     print ('the program time is :%s' %time)
     
+def transform(data_path,words_path):
+    print('start')
+    pool = Pool(11)
+    manager = Manager()
+    data = pd.read_csv(data_path)
+    with open('words_list',encoding='utf-8') as f:
+        s = f.read()
+        words_list = manager.list(s.split(','))
+        f.close()
+    
+    
+    data_size = data.index.size
+    words_size = len(words_list)
+    
+    np.ones((data_size,words_size))
+
+   
+
+
 
 if __name__ == '__main__':
-   pretreatment()
-
+    pretreatment()
+    # transform('temp_data.csv','words_list')

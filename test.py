@@ -13,10 +13,10 @@ def f(x):
 
 
 if __name__ == '__main__':
-    data = ['a,b,c','1,2,3',',12,']
-    with open('words_list','w') as f:
-        f.writelines(','.join(data))
-        f.close
+    m = 3
+    n = 2
+    dp = [[0 for i in range(n)] for j in range(m)]
+    print(dp)
     # with open('words_list') as f:
     #     s = f.read()
     #     ab = s.split(',')
