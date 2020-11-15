@@ -1,6 +1,6 @@
 from math import fabs
 from os import write
-import jieba_fast as jieba
+import jieba
 import numpy as np
 import pandas as pd
 import csv
@@ -116,7 +116,7 @@ def pretreatment():
     #保存处理结果
     with open('temp_data.csv','w',encoding='utf-8') as f:
         writer = csv.writer(f)
-        write.writerow(['doc','category'])
+        writer.writerow(['doc','category'])
         for i in range(size):
             row = [data[i],category[i]]
             writer.writerow(row)
@@ -132,8 +132,9 @@ def pretreatment():
     t_end=tu.time()
     time=t_end-t_start
 
-    print('complete')
+    
     print ('the program time is :%s' %time)
+    print('complete')
     
 def transform(data_path,words_path):
     print('start')
@@ -156,5 +157,5 @@ def transform(data_path,words_path):
 
 
 if __name__ == '__main__':
-    pretreatment()
-    # transform('temp_data.csv','words_list')
+    # pretreatment()
+    transform('temp_data.csv','words_list')
