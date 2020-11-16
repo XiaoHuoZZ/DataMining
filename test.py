@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from multiprocessing import Process
 from multiprocessing import Pool
+from multiprocessing import Manager
 from os.path import join
 import time
 import random
@@ -13,12 +14,13 @@ def f(x):
 
 
 if __name__ == '__main__':
-    m = 3
-    n = 2
-    dp = [[0 for i in range(n)] for j in range(m)]
-    print(dp)
-    # with open('words_list') as f:
-    #     s = f.read()
-    #     ab = s.split(',')
-    #     print(ab)
+    # m = 3
+    # n = 2
+    # dp = [[0 for i in range(n)] for j in range(m)]
+    # print(dp)
+    manager = Manager()
+    dic = manager.dict()
+    s = 'h'
+    dic[s] = 'hello'
+    print(dic)
         
