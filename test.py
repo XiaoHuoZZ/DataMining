@@ -21,13 +21,14 @@ if __name__ == '__main__':
     # dp = [[0 for i in range(n)] for j in range(m)]
     # print(dp)
     
-    for i in range(10):
-        with open('test.csv','a',encoding='utf-8') as f:
-            writer = csv.writer(f)
-            row = ['nihao']
-            writer.writerow(row)
-            f.close
-
+    with open('news.sohunews.010806.txt','r',encoding='utf-8') as f:
+        s = f.read()
+        ns = s.replace('&','&amp')
+        res = '<docs>\n' + ns + '</docs>'
+        f.close
+    with open('news.sohunews.010806.txt','w',encoding='utf-8') as f:
+        f.write(res)
+        f.close
     # with open('words_list') as f:
     #     s = f.read()
     #     ab = s.split(',')

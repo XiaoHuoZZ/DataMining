@@ -24,8 +24,8 @@ def random_index(rate):
             break
     return index
 
-def partition(data_path):
-    with open(data_path, 'r',encoding='utf-8') as f:
+def partition():
+    with open('./data/data.csv', 'r',encoding='utf-8') as f:
         reader = csv.reader(f)
         tr=open('./data/train.csv', 'a', newline='',encoding='utf-8')
         te=open('./data/test.csv', 'a', newline='',encoding='utf-8')
@@ -63,7 +63,7 @@ def handle_transform():
 def pretreatment():
     t_start=tu.time()
     res_list=[]
-    pool = Pool(11)
+    pool = Pool(12)
     stop_list=[]
     category = []
     #加载停用词表
@@ -80,6 +80,8 @@ def pretreatment():
             if i != 0:
                 data.append(row[2])
                 category.append(row[0])
+                if row[0] == 'category':
+                    print(row[2])
         
         cat_list = list(set(category))
         dic = {}
@@ -103,7 +105,7 @@ def pretreatment():
     pool.join()
 
     #去重
-    print('\n generate words_list')
+    print('\n save')
     l_start = tu.time()
 
     dic = {}
@@ -116,10 +118,6 @@ def pretreatment():
             nL = dic[cat] + temp[cat]
             dic[cat] = list(set(nL))
             
-    l_end = tu.time()
-    l_time = l_end-l_start
-    print ('the wordslist time is :%s' %l_time)
-
     #保存处理结果
     for i in range(size):
         doc = data[i]
@@ -133,11 +131,18 @@ def pretreatment():
         f.write(str(dic))
         f.close
 
+    l_end = tu.time()
+    l_time = l_end-l_start
+    print ('the save time is :%s' %l_time)
+
+
+
     t_end=tu.time()
     time=t_end-t_start
 
     
     print ('the program time is :%s' %time)
+    print('data size:' + str(size))
     print('complete')
     
 def transform():
@@ -154,6 +159,10 @@ def transform():
     for cat in cat_list:
         szie  = len(dic[cat])
         bow[cat] = np.zeros(szie)
+
+    manager = Manager()
+
+    m_dic = manager.dict(dic)
 
     for cat in cat_list:
         with open('temp/'+ cat +'.csv',encoding='utf-8') as f:
@@ -174,6 +183,7 @@ def transform():
 
 
 if __name__ == '__main__':
+    # partition()
     # pretreatment()
     # cat_list = ['2008','auto','business','career','category','cul','health','house','it','learning','mil','news','sports','travel','women','yule']
     transform()
