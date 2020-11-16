@@ -64,8 +64,8 @@ def pretreatment():
     t_start=tu.time()
     res_list=[]
     pool = Pool(11)
-    words_list = []
     stop_list=[]
+    category = []
     #加载停用词表
     with open('stop_words.txt','r') as f:
         for line in f:
@@ -116,9 +116,6 @@ def pretreatment():
             nL = dic[cat] + temp[cat]
             dic[cat] = list(set(nL))
             
-    
-   
-
     l_end = tu.time()
     l_time = l_end-l_start
     print ('the wordslist time is :%s' %l_time)
@@ -127,19 +124,14 @@ def pretreatment():
     for i in range(size):
         doc = data[i]
         cat = category[i]
-        with open('./temp/'+ cat +'.csv','a',encoding='utf-8') as f:
+        with open('./temp/'+ cat +'.csv','a',encoding='utf-8',newline='') as f:
             writer = csv.writer(f)
             writer.writerow([doc])
             f.close
 
-        
-
     with open('words_list','w',encoding='utf-8') as f:
         f.write(str(dic))
         f.close
-
-    print("words len:"+str(len(words_list)))
-    
 
     t_end=tu.time()
     time=t_end-t_start
@@ -148,26 +140,41 @@ def pretreatment():
     print ('the program time is :%s' %time)
     print('complete')
     
-def transform(data_path,words_path):
+def transform():
     print('start')
-    pool = Pool(11)
-    manager = Manager()
-    data = pd.read_csv(data_path)
     with open('words_list',encoding='utf-8') as f:
-        s = f.read()
-        words_list = manager.list(s.split(','))
+        dic = eval(f.read())
         f.close()
     
+    cat_list = list(dic.keys())
+
+    start = tu.time()
+
+    bow = {}
+    for cat in cat_list:
+        szie  = len(dic[cat])
+        bow[cat] = np.zeros(szie)
+
+    for cat in cat_list:
+        with open('temp/'+ cat +'.csv',encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                doc = row[0].split(',')
+                for d in doc:
+                    i = dic[cat].index(d) #查找该词在词典中的位置
+                    bow[cat][i] = bow[cat][i] + 1
     
-    data_size = data.index.size
-    words_size = len(words_list)
-    
-    np.ones((data_size,words_size))
+    end = tu.time()
+
+    print(end-start)
+
 
    
 
 
 
 if __name__ == '__main__':
-    pretreatment()
-    # transform('temp_data.csv','words_list')
+    # pretreatment()
+    # cat_list = ['2008','auto','business','career','category','cul','health','house','it','learning','mil','news','sports','travel','women','yule']
+    transform()
+
