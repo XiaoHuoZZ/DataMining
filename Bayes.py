@@ -43,21 +43,33 @@ def partition(data_path):
     print('划分完毕')
 
 
+<<<<<<< HEAD
 def handle_fenci(data,m,n,stop_list,category,words_dict):
     # part_list = []
+=======
+def handle_fenci(data,m,n,stop_list,cat,dic):
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
     for i in range(m,n):
         t = data[i]
         s = re.sub(u'[^\u4e00-\u9fa5|\s]', "", t).replace('\u3000','')
         jlist = jieba.lcut(s, cut_all=False)  #为每个文档分词
         doc = []
         for wd in jlist:
+<<<<<<< HEAD
             words_dict[category[i]].append(wd)
             # part_list.append(wd)
+=======
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
             if wd not in stop_list:
+                dic[cat[i]].append(wd)
                 doc.append(wd)
         data[i] =  ','.join(doc)
     print('done:'+str(n))
+<<<<<<< HEAD
     # return list(set(part_list))
+=======
+    return dic
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
     
 def handle_transform():
     return
@@ -77,6 +89,7 @@ def pretreatment():
         manager = Manager()
         reader = csv.reader(f)
         data = manager.list()
+<<<<<<< HEAD
         category = manager.list()
         words_dict = manager.dict()
         for i,row in enumerate(reader):
@@ -88,17 +101,35 @@ def pretreatment():
                 words_dict[cat] = []
                 
 
+=======
+        
+        for i,row in enumerate(reader):
+            if i != 0:
+                data.append(row[2])
+                category.append(row[0])
+        
+        cat_list = list(set(category))
+        dic = {}
+        for cat in cat_list:
+            dic[cat] = []
+        
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
         print('load')
         size = len(data)
         ratio = 10000
         t = size//ratio
         offset = size-t*ratio
         for i in range(t):
+<<<<<<< HEAD
             res = pool.apply_async(func=handle_fenci, args=(data,i*ratio,(i+1)*ratio,stop_list,category,words_dict))
             res_list.append(res)
         res = pool.apply_async(func=handle_fenci, args=(data,t*ratio,t*ratio+offset,stop_list,category,words_dict))
+=======
+            res = pool.apply_async(func=handle_fenci, args=(data,i*ratio,(i+1)*ratio,stop_list,category,dic,))
+            res_list.append(res)
+        res = pool.apply_async(func=handle_fenci, args=(data,t*ratio,t*ratio+offset,stop_list,category,dic,))
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
         res_list.append(res)
-        # res = pool.map(handle,[data,data,data,data,data])    
         f.close
 
     
@@ -109,6 +140,7 @@ def pretreatment():
     print('\n generate words_list')
     l_start = tu.time()
 
+<<<<<<< HEAD
     # suml = []
     # for res in res_list:
     #     temp = res.get()
@@ -118,22 +150,38 @@ def pretreatment():
 
     for key in words_dict.keys:
         words_dict[key] = list(set(words_dict[key]))
+=======
+    dic = {}
+    for cat in cat_list:
+        dic[cat] = []
+    
+    for res in res_list:
+        temp = res.get()
+        for cat in cat_list:
+            nL = dic[cat] + temp[cat]
+            dic[cat] = list(set(nL))
+            
+    
+   
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
 
     l_end = tu.time()
     l_time = l_end-l_start
     print ('the wordslist time is :%s' %l_time)
 
     #保存处理结果
-    with open('temp_data.csv','w',encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['doc','category'])
-        for i in range(size):
-            row = [data[i],category[i]]
-            writer.writerow(row)
-        f.close()
+    for i in range(size):
+        doc = data[i]
+        cat = category[i]
+        with open('./temp/'+ cat +'.csv','a',encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow([doc])
+            f.close
+
+        
 
     with open('words_list','w',encoding='utf-8') as f:
-        f.write(','.join(words_list))
+        f.write(str(dic))
         f.close
 
     print("words len:"+str(len(words_list)))
@@ -169,4 +217,7 @@ def transform(data_path,words_path):
 if __name__ == '__main__':
     pretreatment()
     # transform('temp_data.csv','words_list')
+<<<<<<< HEAD
  
+=======
+>>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
