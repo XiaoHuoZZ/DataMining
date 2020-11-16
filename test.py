@@ -18,13 +18,6 @@ if __name__ == '__main__':
     # n = 2
     # dp = [[0 for i in range(n)] for j in range(m)]
     # print(dp)
-<<<<<<< HEAD
-    manager = Manager()
-    dic = manager.dict()
-    s = 'h'
-    dic[s] = 'hello'
-    print(dic)
-=======
     a = ['a','wefa','wearewae']
     with open('test','w') as f:
         f.writelines(a)
@@ -33,5 +26,4 @@ if __name__ == '__main__':
     #     s = f.read()
     #     ab = s.split(',')
     #     print(ab)
->>>>>>> ce9267e041294bec3f1fa8b14cbdfea69925312f
         
