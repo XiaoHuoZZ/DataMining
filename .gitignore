@@ -3,3 +3,6 @@
 /.vscode
 *.csv
 /sougou
+/dic
+/tf-idf
+/temp

@@ -8,6 +8,9 @@ import time
 import random
 import csv
 from time import sleep
+import os
+import numpy as np
+
 
 def f(x):
     i = random.randint(1,5)
@@ -20,15 +23,13 @@ if __name__ == '__main__':
     # n = 2
     # dp = [[0 for i in range(n)] for j in range(m)]
     # print(dp)
+    a = np.zeros(5,dtype=np.int)
+    print(a+1)
+   
+
+
     
-    with open('news.sohunews.010806.txt','r',encoding='utf-8') as f:
-        s = f.read()
-        ns = s.replace('&','&amp')
-        res = '<docs>\n' + ns + '</docs>'
-        f.close
-    with open('news.sohunews.010806.txt','w',encoding='utf-8') as f:
-        f.write(res)
-        f.close
+    
     # with open('words_list') as f:
     #     s = f.read()
     #     ab = s.split(',')

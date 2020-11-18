@@ -1,7 +1,11 @@
 from math import fabs
-from os import write
+from multiprocessing import pool
+from os import error, write
+import os
 import jieba
 import numpy as np
+from numpy.core.fromnumeric import size
+from numpy.core.numeric import ones
 import pandas as pd
 import csv
 import random
@@ -58,34 +62,41 @@ def handle_fenci(data,m,n,stop_list,cat,dic):
     print('done:'+str(n))
     return dic
     
-def handle_tf(cat,dic):
-    pool = Pool(2)
-    bow = np.zeros(len(dic[cat]))
+def handle_tf(cat,dic,cat_list):
+    # with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
+    #     dic = eval(f.read())
+    bow = np.zeros(len(dic[cat]),dtype=np.int)
+    idf = {}
+    for c in cat_list:
+        idf[c] = np.zeros(len(dic[c]),dtype=np.int)
+
     with open('temp/'+ cat +'.csv',encoding='utf-8') as f:
         reader = csv.reader(f)
         for row in reader:
-            doc = row[0].split(',')
-            res = pool.map(partial(handle_tf1,l=dic[cat]),doc)
-            for i in res:
-                if i>=0:
+            doc = row[0].split(',')  
+            for d in doc:
+                if d != '':    #防止空文档
+                    i = dic[cat][d] #查找该词在词典中的位置
                     bow[i] = bow[i] + 1
-            # for d in doc:
-            #     i = dic[cat].index(d) #查找该词在词典中的位置
-            #     bow[i] = bow[i] + 1
-        pool.close()
+            #生成部分idf
+            for d in list(set(doc)):
+                if d != '':    #防止空文档
+                    for c in cat_list:
+                        try:
+                            i = dic[c][d] #查找该词在词典中的位置
+                            idf[c][i] = idf[c][i] + 1   #如果该词存在于该种类字典，则加1
+                        except KeyError:
+                            pass    #如果不存在，则略过
         f.close()
     print('done:'+cat)
-    return bow
+    return (cat,bow,idf)
 
-def handle_tf1(d,l):
-    if d == '':
-        print('error')
-        return -1
-    i = l.index(d) #查找该词在词典中的位置
-    return i
+def handle_idf(cat):
+    with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
+        dic = eval(f.read())
+    
 
-
-def pretreatment():
+def pretreatment(task):
     t_start=tu.time()
     res_list=[]
     pool = Pool(12)
@@ -98,7 +109,7 @@ def pretreatment():
             stop_list.append(line.strip('\n'))
         f.close()
     #加载数据
-    with open('./data/train.csv', 'r',encoding='utf-8') as f:
+    with open('./data/'+ task +'.csv', 'r',encoding='utf-8') as f:
         reader = csv.reader(f)
         data = manager.list()
         for i,row in enumerate(reader):
@@ -106,7 +117,7 @@ def pretreatment():
                 data.append(row[2])
                 category.append(row[0])
                 if row[0] == 'category':
-                    print(row[2])
+                    print('error')
         f.close()
     print('load')
 
@@ -116,7 +127,6 @@ def pretreatment():
     for cat in cat_list:
         dic[cat] = []
         
-   
     #任务分解
     size = len(data)
     ratio = 10000   #每个进程处理文档数
@@ -133,29 +143,48 @@ def pretreatment():
     print('\n start save')
     l_start = tu.time()
 
-    dic = {}
-    for cat in cat_list:
-        dic[cat] = []
-    
-    #取分词结果并保存到dic
-    for res in res_list:
-        temp = res.get()
+    if task =='train':
+        #取分词结果并按种类保存到dic
+        dic = {}
         for cat in cat_list:
-            nL = dic[cat] + temp[cat]
-            dic[cat] = list(set(nL))  #去重
-            
-    #保存处理结果
-    for i in range(size):
-        doc = data[i]
-        cat = category[i]
-        with open('./temp/'+ cat +'.csv','a',encoding='utf-8',newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([doc])
-            f.close()
+            dic[cat] = []
+    
+        for res in res_list:
+            temp = res.get()
+            for cat in cat_list:
+                nL = dic[cat] + temp[cat]
+                dic[cat] = list(set(nL))  #去重
+    
+        for cat in cat_list:
+            wd_indx = {}    #词字典
+            for i,wd in enumerate(dic[cat]):
+                wd_indx[wd] = i
+            dic[cat] = wd_indx
+        
+        #保存分词后的结果
+        for i in range(size):    
+            doc = data[i]
+            cat = category[i]
+            with open('./temp/'+ cat +'.csv','a',encoding='utf-8',newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([doc])
+                f.close()
+         #保存字典
+        for cat in cat_list:          
+            with open('./dic/'+ cat + '_dic','w',encoding='utf-8') as f:
+                f.write(str(dic[cat]))
+                f.close()
 
-    with open('words_list','w',encoding='utf-8') as f:
-        f.write(str(dic))
-        f.close()
+    elif task == 'test':
+        with open('./temp/temp_test.csv','w',encoding='utf-8',newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['doc','category'])
+            for i in range(size):    #保存分词后的结果
+                doc = data[i]
+                cat = category[i]
+                writer.writerow([doc,cat])
+            f.close()
+       
 
     l_end = tu.time()
     l_time = l_end-l_start
@@ -174,58 +203,93 @@ def transform():
     start = tu.time()
     res_list=[]
     manager = Manager()
-    #加载字典
-    with open('words_list',encoding='utf-8') as f:
-        dic = manager.dict(eval(f.read()))
-        f.close()
     
     #种类列表
-    cat_list = list(dic.keys())
-
-    #词袋模型
-    # bow ={}
-    # for cat in cat_list:
-    #     szie  = len(dic[cat])
-    #     bow[cat] = np.zeros(szie)
+    cat_list = []
+    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    for l in list:
+        cat_list.append(l.split('_')[0])
 
     print('start transform')
 
-    
+    #加载字典
+    dic = {}
     for cat in cat_list:
-        # res = pool.apply_async(func=handle_tf, args=(cat,dic,))
-        # res_list.append(res)
-        process = Process(target=handle_tf, args=(cat,dic))
-        process.start()
-        res_list.append(process)
-    for res in res_list:
-        res.join()
+        with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
+            t = eval(f.read())
+            dic[cat] = t
+    # m_dic = manager.dict(dic)
 
+
+    pool = Pool(12)
+    for cat in cat_list:
+        res = pool.apply_async(func=handle_tf, args=(cat,dic,cat_list,))
+        res_list.append(res)
+    pool.close()
+    pool.join()
+
+    #取结果    1.按种类生成词袋模型  2.按种类合成idf
+    bow = {}
+    idf = {}
+    with open('./data/data.csv',encoding='utf-8') as f:  #获取文档总数
+        reader = csv.reader(f)
+        size = -1
+        for row in reader:
+            size = size + 1
+        f.close()
+    for c in cat_list:
+        idf[c] = np.zeros(len(dic[c]),dtype=np.int) 
+
+    for res in res_list:
+        temp = res.get()
+        bow[temp[0]] = temp[1]
+        for c in cat_list:
+            idf[c] = idf[c] + temp[2][c]
+    for c in cat_list:
+        all_doc = np.ones(len(dic[c]),dtype=np.int) + size
+        idf[c] =np.log( all_doc / (idf[c]+1) )
 
     
-    # for cat in cat_list:
-    #     with open('temp/'+ cat +'.csv',encoding='utf-8') as f:
-    #         reader = csv.reader(f)
-    #         for row in reader:
-    #             doc = row[0].split(',')
-    #             res = pool.map(partial(handle_tf1,l=dic[cat]),doc)
-    #             print('done')
-            # for d in doc:
-            #     i = dic[cat].index(d) #查找该词在词典中的位置
-            #     bow[i] = bow[i] + 1
-            # f.close()
 
     end = tu.time()
 
     print(end-start)
+    print('end transform')
+    print(idf)
+    return bow,cat_list,idf
 
+def training(bow,cat_list,idf):
+    #计算TF-IDF并进行一个保存
+    for cat in cat_list:
+        bow[cat] = bow[cat] / bow[cat].sum()  #得到词频
+        bow[cat] = bow[cat] * idf[cat]
+        np.save('./tf-idf/'+ cat,bow[cat])
 
-   
-
-
+def forecast():
+     #种类列表
+    cat_list = []
+    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    for l in list:
+        cat_list.append(l.split('_')[0])
+    #加载 tf-idf
+    tf_idf = {}
+    for cat in cat_list:
+        tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
+    #加载字典
+    dic = {}
+    for cat in cat_list:
+        with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
+            t = eval(f.read())
+            dic[cat] = t
+    #加载测试集
+    test_df = pd.read_csv('./temp/temp_test.csv')
+    
 
 if __name__ == '__main__':
     # partition()
-    # pretreatment()
-    # cat_list = ['2008','auto','business','career','category','cul','health','house','it','learning','mil','news','sports','travel','women','yule']
-    transform()
+    # pretreatment('test')
+    # bow,cat_list,idf = transform()
+    # training(bow,cat_list,idf)
+    forecast()
+    
 
