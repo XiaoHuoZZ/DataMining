@@ -1,11 +1,14 @@
 from math import fabs
+import math
 from multiprocessing import pool
+from multiprocessing import managers
 from os import error, write
 import os
 import jieba
 import numpy as np
 from numpy.core.fromnumeric import size
 from numpy.core.numeric import ones
+from numpy.lib.polynomial import poly
 import pandas as pd
 import csv
 import random
@@ -90,10 +93,6 @@ def handle_tf(cat,dic,cat_list):
         f.close()
     print('done:'+cat)
     return (cat,bow,idf)
-
-def handle_idf(cat):
-    with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
-        dic = eval(f.read())
     
 
 def pretreatment(task):
@@ -255,18 +254,55 @@ def transform():
 
     print(end-start)
     print('end transform')
-    print(idf)
+    # for cat in cat_list:
+    #     np.save('./idf/'+ cat,idf[cat])
+    #     # bow[cat] = bow[cat] / bow[cat].sum()  #得到词频
+    #     np.save('./tf/'+ cat,bow[cat])
     return bow,cat_list,idf
 
 def training(bow,cat_list,idf):
     #计算TF-IDF并进行一个保存
     for cat in cat_list:
         bow[cat] = bow[cat] / bow[cat].sum()  #得到词频
-        bow[cat] = bow[cat] * idf[cat]
-        np.save('./tf-idf/'+ cat,bow[cat])
+        bow[cat] = np.log(bow[cat]) + np.log(idf[cat])
+        np.save('./tf-idf/'+ cat,bow[cat])  #save
+    df = pd.read_csv('./data/data.csv')
+    size =  df.index.size
+    pv = {}  #先验概率
+    for cat in cat_list:
+        pv[cat] = 0
+    for i in range(size):
+        c = df.iloc[i]['category']
+        pv[c] = pv[c] + 1
+    for cat in cat_list:
+        pv[cat] = math.log(pv[cat] / size)
+    with open('pv','w',encoding='utf-8') as f:
+        f.write(str(pv))
+        f.close
+
+def cal(doc,cat,dic,tf_idf,cat_list,pv):
+    m = -1
+    rc = 'news'
+    for c in cat_list:
+        res = pv[c]
+        m = res
+        for d in doc:
+            if d != '':
+                try:
+                    i = dic[c][d]
+                    res = res + tf_idf[c][i]
+                except KeyError:
+                    pass
+        if res >= m:
+            m = res
+            rc = c
+    if rc == cat:
+        return True
+    else:
+        return False
 
 def forecast():
-     #种类列表
+    #种类列表
     cat_list = []
     list = os.listdir('./dic') #列出文件夹下所有的目录与文件
     for l in list:
@@ -281,8 +317,36 @@ def forecast():
         with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
             t = eval(f.read())
             dic[cat] = t
-    #加载测试集
-    test_df = pd.read_csv('./temp/temp_test.csv')
+    df = pd.read_csv('./temp/temp_test.csv')
+    with open('pv',encoding='utf-8') as f:
+        pv = eval(f.read())
+    
+    size = df.index.size
+    right = 0
+    pool = Pool(12)
+    manager = Manager()
+    res_list = []
+    m_dic = manager.dict(dic)
+    m_tf_idf = manager.dict(tf_idf)
+    for i in range(size):
+        s = df.iloc[i]['doc']
+        c = df.iloc[i]['category']
+        if isinstance(s,float):
+            size = size - 1
+        else:
+            res = pool.apply_async(func=cal, args=(s.split(','),c,m_dic,m_tf_idf,cat_list,pv,))
+            res_list.append(res)
+    pool.close()
+    pool.join()        
+    for r in res_list:
+        isR = r.get()
+        if isR == True:
+            right = right + 1
+    ratio = right / size
+
+    print(ratio)
+    
+    
     
 
 if __name__ == '__main__':

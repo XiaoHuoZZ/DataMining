@@ -19,14 +19,25 @@ def f(x):
 
 
 if __name__ == '__main__':
-    # m = 3
-    # n = 2
-    # dp = [[0 for i in range(n)] for j in range(m)]
-    # print(dp)
-    a = np.zeros(5,dtype=np.int)
-    print(a+1)
-   
+    cat_list = []
+    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    for l in list:
+        cat_list.append(l.split('_')[0])
+    tf_idf = {}
+    tf = {}
+    idf = {}
+    for cat in cat_list:
+        tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
+    for cat in cat_list:
+        tf[cat] = np.load('./tf/'+ cat + '.npy')
+    for cat in cat_list:
+        idf[cat] = np.load('./idf/'+ cat + '.npy')
 
+    
+    for cat in cat_list:
+        tf_idf[cat] = np.log(tf[cat]/tf[cat].sum())
+    
+    print(tf_idf)
 
     
     
