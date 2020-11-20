@@ -59,15 +59,15 @@ def handle_fenci(data,m,n,stop_list,cat,dic):
         doc = []
         for wd in jlist:
             if wd not in stop_list:
-                dic[cat[i]].append(wd)
-                doc.append(wd)
-        data[i] =  ','.join(doc)
+                if len(jlist) > 5:   #分词结果大于5才能加入字典和处理后的结果
+                    dic[cat[i]].append(wd)
+                    doc.append(wd)
+        # data[i] =  ','.join(doc)
+        data[i] =  doc
     print('done:'+str(n))
     return dic
     
-def handle_tf(cat,dic,cat_list):
-    # with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
-    #     dic = eval(f.read())
+def handle_bow(cat,dic,cat_list):
     bow = np.zeros(len(dic[cat]),dtype=np.int)
     idf = {}
     for c in cat_list:
@@ -80,21 +80,21 @@ def handle_tf(cat,dic,cat_list):
             for d in doc:
                 if d != '':    #防止空文档
                     i = dic[cat][d] #查找该词在词典中的位置
-                    bow[i] = bow[i] + 1
+                    bow[i] = bow[i] + 1  #词袋模型加1
             #生成部分idf
             for d in list(set(doc)):
                 if d != '':    #防止空文档
                     for c in cat_list:
                         try:
                             i = dic[c][d] #查找该词在词典中的位置
-                            idf[c][i] = idf[c][i] + 1   #如果该词存在于该种类字典，则加1
+                            idf[c][i] = idf[c][i] + 1   #如果该词存在于该种类字典，则文档数加1
                         except KeyError:
                             pass    #如果不存在，则略过
         f.close()
     print('done:'+cat)
     return (cat,bow,idf)
     
-
+#预处理，包括分词，产生temp目录数据集，dic目录
 def pretreatment(task):
     t_start=tu.time()
     res_list=[]
@@ -103,7 +103,7 @@ def pretreatment(task):
     stop_list=[]
     category = []
     #加载停用词表
-    with open('stop_words.txt','r') as f:
+    with open('stop_words.txt','r',encoding='utf-8') as f:
         for line in f:
             stop_list.append(line.strip('\n'))
         f.close()
@@ -164,10 +164,11 @@ def pretreatment(task):
         for i in range(size):    
             doc = data[i]
             cat = category[i]
-            with open('./temp/'+ cat +'.csv','a',encoding='utf-8',newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow([doc])
-                f.close()
+            if  doc:           #分词结果大于4的才保存
+                with open('./temp/'+ cat +'.csv','a',encoding='utf-8',newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([','.join(doc)])
+                    f.close()
          #保存字典
         for cat in cat_list:          
             with open('./dic/'+ cat + '_dic','w',encoding='utf-8') as f:
@@ -175,13 +176,15 @@ def pretreatment(task):
                 f.close()
 
     elif task == 'test':
+        #测试集保存分词结果的格式与训练集不同
         with open('./temp/temp_test.csv','w',encoding='utf-8',newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['doc','category'])
-            for i in range(size):    #保存分词后的结果
+            for i in range(size):    
                 doc = data[i]
                 cat = category[i]
-                writer.writerow([doc,cat])
+                if  doc :  #分词结果大于4才存
+                    writer.writerow([','.join(doc),cat])
             f.close()
        
 
@@ -197,11 +200,11 @@ def pretreatment(task):
     print ('the program time is :%s' %time)
     print('data size:' + str(size))
     print('complete')
-    
-def transform():
+
+#产生tf-idf目录 ndic目录
+def training():
     start = tu.time()
     res_list=[]
-    manager = Manager()
     
     #种类列表
     cat_list = []
@@ -222,7 +225,7 @@ def transform():
 
     pool = Pool(12)
     for cat in cat_list:
-        res = pool.apply_async(func=handle_tf, args=(cat,dic,cat_list,))
+        res = pool.apply_async(func=handle_bow, args=(cat,dic,cat_list,))
         res_list.append(res)
     pool.close()
     pool.join()
@@ -230,12 +233,15 @@ def transform():
     #取结果    1.按种类生成词袋模型  2.按种类合成idf
     bow = {}
     idf = {}
-    with open('./data/data.csv',encoding='utf-8') as f:  #获取文档总数
-        reader = csv.reader(f)
-        size = -1
-        for row in reader:
-            size = size + 1
-        f.close()
+    size = 0
+
+    for cat in cat_list: #获取文档总数
+        with open('./temp/'+ cat +'.csv',encoding='utf-8') as f:  
+            reader = csv.reader(f)
+            for row in reader:
+                size = size + 1
+            f.close()
+
     for c in cat_list:
         idf[c] = np.zeros(len(dic[c]),dtype=np.int) 
 
@@ -245,58 +251,82 @@ def transform():
         for c in cat_list:
             idf[c] = idf[c] + temp[2][c]
     for c in cat_list:
-        all_doc = np.ones(len(dic[c]),dtype=np.int) + size
+        all_doc = np.zeros(len(dic[c]),dtype=np.int) + size  #总文档数
         idf[c] =np.log( all_doc / (idf[c]+1) )
 
-    
-
     end = tu.time()
-
     print(end-start)
     print('end transform')
     # for cat in cat_list:
     #     np.save('./idf/'+ cat,idf[cat])
-    #     # bow[cat] = bow[cat] / bow[cat].sum()  #得到词频
+    #     bow[cat] = bow[cat] / bow[cat].sum()  #得到词频
     #     np.save('./tf/'+ cat,bow[cat])
-    return bow,cat_list,idf
 
-def training(bow,cat_list,idf):
-    #计算TF-IDF并进行一个保存
+    print('strat training')
+    #计算TF-IDF 并选前n个保存
+    n = 1000
+
     for cat in cat_list:
-        bow[cat] = bow[cat] / bow[cat].sum()  #得到词频
-        bow[cat] = np.log(bow[cat]) + np.log(idf[cat])
-        np.save('./tf-idf/'+ cat,bow[cat])  #save
-    df = pd.read_csv('./data/data.csv')
-    size =  df.index.size
+        tf = bow[cat] / bow[cat].sum()  #得到词频
+        bow[cat] = tf * idf[cat] #得到tf-idf
+        print(bow[cat])
+        indexs = (-bow[cat]).argsort()[:n]  #前n个词坐标
+
+        tf_idf = np.zeros(n)
+        for i,idx in enumerate(indexs):  #得到新的tf-idf
+            tf_idf[i] = bow[cat][idx]
+    
+        ndic = {}
+        tdic = {v : k for k, v in dic[cat].items()}
+        for i,idx in enumerate(indexs):     #得到新的字典
+            wd = tdic[idx]
+            ndic[wd] = i
+        print(tf_idf)
+        np.save('./tf-idf/'+ cat,tf_idf)  #save
+        with open('./ndic/'+ cat +'_dic','w',encoding='utf-8') as f:
+            f.write(str(ndic))
+
+
+
+    
     pv = {}  #先验概率
+    for c in cat_list:
+        pv[c] = 0
+        with open('./temp/'+ c +'.csv',encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                pv[c] = pv[c] + 1
+            f.close()
     for cat in cat_list:
-        pv[cat] = 0
-    for i in range(size):
-        c = df.iloc[i]['category']
-        pv[c] = pv[c] + 1
-    for cat in cat_list:
-        pv[cat] = math.log(pv[cat] / size)
+        pv[cat] =pv[cat] / size
     with open('pv','w',encoding='utf-8') as f:
         f.write(str(pv))
         f.close
+    print('end training')
+    
 
 def cal(doc,cat,dic,tf_idf,cat_list,pv):
-    m = -1
     rc = 'news'
+    isFirst = True
+    m = 0
     for c in cat_list:
         res = pv[c]
-        m = res
         for d in doc:
             if d != '':
                 try:
                     i = dic[c][d]
-                    res = res + tf_idf[c][i]
+                    # print(tf_idf[c][i])
+                    res = res * tf_idf[c][i]
                 except KeyError:
                     pass
+        if isFirst:
+            m = res
+            isFirst = False
         if res >= m:
             m = res
             rc = c
     if rc == cat:
+        # print('right')
         return True
     else:
         return False
@@ -314,46 +344,50 @@ def forecast():
     #加载字典
     dic = {}
     for cat in cat_list:
-        with open('dic/'+ cat +'_dic',encoding='utf-8') as f:
+        with open('ndic/'+ cat +'_dic',encoding='utf-8') as f:
             t = eval(f.read())
             dic[cat] = t
     df = pd.read_csv('./temp/temp_test.csv')
     with open('pv',encoding='utf-8') as f:
         pv = eval(f.read())
     
+    print('start')
     size = df.index.size
     right = 0
-    pool = Pool(12)
-    manager = Manager()
-    res_list = []
-    m_dic = manager.dict(dic)
-    m_tf_idf = manager.dict(tf_idf)
+    # pool = Pool(12)
+    # manager = Manager()
+    # res_list = []
+    # m_dic = manager.dict(dic)
+    # m_tf_idf = manager.dict(tf_idf)
+    # for i in range(size):
+    #     s = df.iloc[i]['doc']
+    #     c = df.iloc[i]['category']
+    #     res = pool.apply_async(func=cal, args=(s.split(','),c,dic,tf_idf,cat_list,pv,))
+    #     res_list.append(res)
+            
+    # pool.close()
+    # pool.join()        
+    # for r in res_list:
+    #     isR = r.get()
+    #     if isR == True:
+    #         right = right + 1
+
     for i in range(size):
-        s = df.iloc[i]['doc']
+        doc = df.iloc[i]['doc'].split(',')
         c = df.iloc[i]['category']
-        if isinstance(s,float):
-            size = size - 1
-        else:
-            res = pool.apply_async(func=cal, args=(s.split(','),c,m_dic,m_tf_idf,cat_list,pv,))
-            res_list.append(res)
-    pool.close()
-    pool.join()        
-    for r in res_list:
-        isR = r.get()
-        if isR == True:
+        res = cal(doc,c,dic,tf_idf,cat_list,pv)
+        if res:
             right = right + 1
+
     ratio = right / size
 
     print(ratio)
     
     
-    
-
 if __name__ == '__main__':
     # partition()
     # pretreatment('test')
-    # bow,cat_list,idf = transform()
-    # training(bow,cat_list,idf)
+    # training()
     forecast()
     
 

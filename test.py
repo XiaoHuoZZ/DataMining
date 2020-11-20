@@ -10,6 +10,7 @@ import csv
 from time import sleep
 import os
 import numpy as np
+import FileUtils
 
 
 def f(x):
@@ -24,25 +25,24 @@ if __name__ == '__main__':
     for l in list:
         cat_list.append(l.split('_')[0])
     tf_idf = {}
-    tf = {}
-    idf = {}
     for cat in cat_list:
         tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
-    for cat in cat_list:
-        tf[cat] = np.load('./tf/'+ cat + '.npy')
-    for cat in cat_list:
-        idf[cat] = np.load('./idf/'+ cat + '.npy')
-
-    
-    for cat in cat_list:
-        tf_idf[cat] = np.log(tf[cat]/tf[cat].sum())
-    
     print(tf_idf)
+   
 
     
     
-    # with open('words_list') as f:
-    #     s = f.read()
-    #     ab = s.split(',')
-    #     print(ab)
-        
+    # a_dict = {'s':'007', 'b': '003','w':'003','z':'00'}
+    b = {}
+    # print(list(a_dict.keys())) # key 列表
+    # print(list(a_dict.keys())[list(a_dict.values()).index('007')]) # 对应的索引值
+    # print(list(a_dict.keys())[list(a_dict.values()).index('002')])
+
+
+    
+
+# 结果 
+#[ 1, 2]
+# [1]
+# 2
+
