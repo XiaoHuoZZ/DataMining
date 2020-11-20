@@ -235,11 +235,14 @@ def training():
     idf = {}
     size = 0
 
+
     for cat in cat_list: #获取文档总数
         with open('./temp/'+ cat +'.csv',encoding='utf-8') as f:  
             reader = csv.reader(f)
             for row in reader:
+                
                 size = size + 1
+
             f.close()
 
     for c in cat_list:
@@ -264,24 +267,24 @@ def training():
 
     print('strat training')
     #计算TF-IDF 并选前n个保存
-    n = 1000
+    n = 500
 
     for cat in cat_list:
         tf = bow[cat] / bow[cat].sum()  #得到词频
-        bow[cat] = tf * idf[cat] #得到tf-idf
-        indexs = (-bow[cat]).argsort()[:n]  #前n个词坐标
-
-        tf_idf = np.zeros(n)
-        for i,idx in enumerate(indexs):  #得到新的tf-idf
-            tf_idf[i] = bow[cat][idx]
+        tf_idf = tf * idf[cat] #得到tf-idf
+        indexs = (-tf_idf).argsort()[:n]  #前n个词坐标
     
         ndic = {}
         tdic = {v : k for k, v in dic[cat].items()}
+
+        tj = np.zeros(n)  #条件概率
         for i,idx in enumerate(indexs):     #得到新的字典
-            wd = tdic[idx]
-            ndic[wd] = i
-        print(tf_idf)
-        np.save('./tf-idf/'+ cat,tf_idf)  #save
+            wd = tdic[idx]  #对应的词
+            ndic[wd] = i     
+            print(bow[cat][idx])
+            tj[i] = bow[cat][idx] / n
+        
+        np.save('./tj/'+ cat,tj)  #save
         with open('./ndic/'+ cat +'_dic','w',encoding='utf-8') as f:
             f.write(str(ndic))
 
@@ -304,18 +307,18 @@ def training():
     print('end training')
     
 
-def cal(doc,cat,dic,tf_idf,cat_list,pv):
+def cal(doc,cat,dic,tj,cat_list,pv):
     rc = 'news'
     isFirst = True
     m = 0
     for c in cat_list:
-        res = pv[c]
+        res = math.log(pv[c])
         for d in doc:
             if d != '':
                 try:
                     i = dic[c][d]
                     # print(tf_idf[c][i])
-                    res = res * tf_idf[c][i]
+                    res = res + math.log(tj[c][i])
                 except KeyError:
                     pass
         if isFirst:
@@ -336,10 +339,10 @@ def forecast():
     list = os.listdir('./dic') #列出文件夹下所有的目录与文件
     for l in list:
         cat_list.append(l.split('_')[0])
-    #加载 tf-idf
-    tf_idf = {}
+    #加载 tj
+    tj = {}
     for cat in cat_list:
-        tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
+        tj[cat] = np.load('./tj/'+ cat + '.npy')
 
     # for cat in cat_list:
     #     tf_idf[cat] = tf_idf[cat] / tf_idf[cat].sum()
@@ -377,7 +380,7 @@ def forecast():
     for i in range(size):
         doc = df.iloc[i]['doc'].split(',')
         c = df.iloc[i]['category']
-        res = cal(doc,c,dic,tf_idf,cat_list,pv)
+        res = cal(doc,c,dic,tj,cat_list,pv)
         if res:
             right = right + 1
 

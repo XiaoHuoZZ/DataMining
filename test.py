@@ -24,10 +24,10 @@ if __name__ == '__main__':
     list = os.listdir('./dic') #列出文件夹下所有的目录与文件
     for l in list:
         cat_list.append(l.split('_')[0])
-    tf_idf = {}
+    tj = {}
     for cat in cat_list:
-        tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
-    print(tf_idf['2008'])
+        tj[cat] = np.load('./tj/'+ cat + '.npy')
+    print(len(tj[cat]))
    
 
     
