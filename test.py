@@ -27,7 +27,7 @@ if __name__ == '__main__':
     tf_idf = {}
     for cat in cat_list:
         tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
-    print(tf_idf)
+    print(tf_idf['2008'])
    
 
     

@@ -252,7 +252,7 @@ def training():
             idf[c] = idf[c] + temp[2][c]
     for c in cat_list:
         all_doc = np.zeros(len(dic[c]),dtype=np.int) + size  #总文档数
-        idf[c] =np.log( all_doc / (idf[c]+1) )
+        idf[c] =np.log( all_doc / (idf[c]+1) )   #计算idf
 
     end = tu.time()
     print(end-start)
@@ -269,7 +269,6 @@ def training():
     for cat in cat_list:
         tf = bow[cat] / bow[cat].sum()  #得到词频
         bow[cat] = tf * idf[cat] #得到tf-idf
-        print(bow[cat])
         indexs = (-bow[cat]).argsort()[:n]  #前n个词坐标
 
         tf_idf = np.zeros(n)
@@ -341,6 +340,9 @@ def forecast():
     tf_idf = {}
     for cat in cat_list:
         tf_idf[cat] = np.load('./tf-idf/'+ cat + '.npy')
+
+    # for cat in cat_list:
+    #     tf_idf[cat] = tf_idf[cat] / tf_idf[cat].sum()
     #加载字典
     dic = {}
     for cat in cat_list:
