@@ -202,7 +202,7 @@ def pretreatment(task):
     print('complete')
 
 #产生tf-idf目录 ndic目录
-def training():
+def training(n):
     start = tu.time()
     res_list=[]
     
@@ -267,7 +267,6 @@ def training():
 
     print('strat training')
     #计算TF-IDF 并选前n个保存
-    n = 500
 
     for cat in cat_list:
         tf = bow[cat] / bow[cat].sum()  #得到词频
@@ -392,7 +391,7 @@ def forecast():
 if __name__ == '__main__':
     # partition()
     # pretreatment('test')
-    # training()
+    training(800)
     forecast()
     
 
