@@ -21,22 +21,18 @@ def f(x):
 
 
 if __name__ == '__main__':
-    # cat_list = []
-    # list = os.listdir('./dic') #列出文件夹下所有的目录与文件
-    # for l in list:
-    #     cat_list.append(l.split('_')[0])
-    # tj = {}
-    # for cat in cat_list:
-    #     tj[cat] = np.load('./tj/'+ cat + '.npy')
-    # print(len(tj[cat]))
+    cat_list = []
+    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    for l in list:
+        cat_list.append(l.split('_')[0])
+    tj = {}
+    for cat in cat_list:
+        tj[cat] = np.load('./tj/'+ cat + '.npy')
+        print(len(tj[cat]))
    
 
     
     
-   df = pd.read_csv('./temp/temp_test.csv')
-   d = df.iloc[0:20]
-   for i,row in d.iterrows():
-       print(row['category'])
     
 
 # 结果 

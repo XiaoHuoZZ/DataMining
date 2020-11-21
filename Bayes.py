@@ -244,9 +244,7 @@ def training(n):
         with open('./temp/'+ cat +'.csv',encoding='utf-8') as f:  
             reader = csv.reader(f)
             for row in reader:
-                
                 size = size + 1
-
             f.close()
 
     for c in cat_list:
@@ -304,7 +302,7 @@ def training(n):
 
     #计算条件概率并保存
     for cat in cat_list:
-        tj[cat] = (tj[cat] + 1) / (n + v_size)
+        tj[cat] = ((tj[cat] + 1) / n + v_size)
         np.save('./tj/'+ cat,tj[cat])  #save
 
     
@@ -326,7 +324,7 @@ def training(n):
 def cal(df,dic,tj,cat_list,pv,v_size):
     right = 0
     for i,row in df.iterrows():
-        doc = row[0]
+        doc = row[0].split(',')
         cat = row[1]
         rc = 'news'  #预测出来的类
         isFirst = True
@@ -351,6 +349,7 @@ def cal(df,dic,tj,cat_list,pv,v_size):
                 rc = c
         if rc == cat:
             right = right + 1
+    print(right)
     return right
 
 def forecast():
@@ -385,9 +384,10 @@ def forecast():
     v_size = len(set(v))
     
     print('start forecast')
-    strat = tu.time()
+    start = tu.time()
     size = df.index.size
     right = 0
+    print('test size: ' + str(size))
 
     pool = Pool(12)
     res_list = []
@@ -396,15 +396,10 @@ def forecast():
     ratio = 10000   #每个进程处理文档数
     t = size//ratio
     offset = size-t*ratio
-    print(size)
     for i in range(t):
-        try:
-            res = pool.apply_async(func=cal, args=(df[i*ratio,(i+1)*ratio],dic,tj,cat_list,pv,v_size,))
-            res_list.append(res)
-        except KeyError:
-            print(i*ratio)
-            print((i+1)*ratio)
-    res = pool.apply_async(func=cal, args=(df[t*ratio,t*ratio+offset],dic,tj,cat_list,pv,v_size,))
+        res = pool.apply_async(func=cal, args=(df[i*ratio:(i+1)*ratio],dic,tj,cat_list,pv,v_size,))
+        res_list.append(res)
+    res = pool.apply_async(func=cal, args=(df[t*ratio:t*ratio+offset],dic,tj,cat_list,pv,v_size,))
     res_list.append(res)
     pool.close()
     pool.join()
@@ -416,8 +411,8 @@ def forecast():
         right = right + res.get()
 
     ratio = right / size
-    end  = tu.time
-    l_time = end - strat
+    end  = tu.time()
+    l_time = end - start
 
     print(ratio)
     print ('the time is :%s' %l_time)
@@ -426,7 +421,7 @@ def forecast():
 if __name__ == '__main__':
     # partition()
     # pretreatment('test')
-    # training(200)
+    # training(2000)
     forecast()
     
 
