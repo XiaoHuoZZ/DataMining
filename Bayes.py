@@ -1,7 +1,5 @@
 from math import fabs
 import math
-from multiprocessing import pool
-from multiprocessing import managers
 from os import error, write
 import os
 import jieba
@@ -35,20 +33,26 @@ def random_index(rate):
 def partition():
     with open('./data/data.csv', 'r',encoding='utf-8') as f:
         reader = csv.reader(f)
+        train_size = 0
+        test_size = 0
         tr=open('./data/train.csv', 'a', newline='',encoding='utf-8')
         te=open('./data/test.csv', 'a', newline='',encoding='utf-8')
         writer1 = csv.writer(tr) 
         writer2 = csv.writer(te)
         for row in reader:
-            i=random_index([90,10])
+            i=random_index([50,50])
             if i==0:
                 writer1.writerow(row) 
+                train_size = train_size +1
             else:
                 writer2.writerow(row) 
+                test_size = test_size + 1
         f.close()
         tr.close()
         te.close()
     print('划分完毕')
+    print('train:' + str(train_size))
+    print('test' + str(test_size))
 
 
 def handle_fenci(data,m,n,stop_list,cat,dic):
@@ -208,9 +212,9 @@ def training(n):
     
     #种类列表
     cat_list = []
-    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
-    for l in list:
-        cat_list.append(l.split('_')[0])
+    dirs = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    for d in dirs:
+        cat_list.append(d.split('_')[0])
 
     print('start transform')
 
@@ -268,26 +272,40 @@ def training(n):
     print('strat training')
     #计算TF-IDF 并选前n个保存
 
+    v = []
+
+    tj = {} #条件概率
     for cat in cat_list:
         tf = bow[cat] / bow[cat].sum()  #得到词频
         tf_idf = tf * idf[cat] #得到tf-idf
         indexs = (-tf_idf).argsort()[:n]  #前n个词坐标
     
+
+        ntf_idf = np.zeros(n)
+        for i,idx in enumerate(indexs):  #得到新的tf-idf
+            ntf_idf[i] = tf_idf[idx]
+
         ndic = {}
         tdic = {v : k for k, v in dic[cat].items()}
 
-        tj = np.zeros(n)  #条件概率
+        t = np.zeros(n)  #筛选后的词出现次数
         for i,idx in enumerate(indexs):     #得到新的字典
             wd = tdic[idx]  #对应的词
             ndic[wd] = i     
-            print(bow[cat][idx])
-            tj[i] = bow[cat][idx] / n
-        
-        np.save('./tj/'+ cat,tj)  #save
+            t[i] = bow[cat][idx] #暂存出现次数
+            v.append(wd)
+        tj[cat] = t
+
+        np.save('./tf-idf/'+ cat,ntf_idf)
         with open('./ndic/'+ cat +'_dic','w',encoding='utf-8') as f:
             f.write(str(ndic))
 
+    v_size = len(set(v))  #筛选后的总词数
 
+    #计算条件概率并保存
+    for cat in cat_list:
+        tj[cat] = (tj[cat] + 1) / (n + v_size)
+        np.save('./tj/'+ cat,tj[cat])  #save
 
     
     pv = {}  #先验概率
@@ -305,39 +323,42 @@ def training(n):
         f.close
     print('end training')
     
-
-def cal(doc,cat,dic,tj,cat_list,pv):
-    rc = 'news'
-    isFirst = True
-    m = 0
-    for c in cat_list:
-        res = math.log(pv[c])
-        for d in doc:
-            if d != '':
-                try:
-                    i = dic[c][d]
-                    # print(tf_idf[c][i])
-                    res = res + math.log(tj[c][i])
-                except KeyError:
-                    pass
-        if isFirst:
-            m = res
-            isFirst = False
-        if res >= m:
-            m = res
-            rc = c
-    if rc == cat:
-        # print('right')
-        return True
-    else:
-        return False
+def cal(df,dic,tj,cat_list,pv,v_size):
+    right = 0
+    for i,row in df.iterrows():
+        doc = row[0]
+        cat = row[1]
+        rc = 'news'  #预测出来的类
+        isFirst = True
+        m = 0
+        for c in cat_list:
+            res = math.log(pv[c])
+            c_size = len(dic[c])
+            for d in doc:
+                if d != '':
+                    try:
+                        i = dic[c][d]
+                        # print(tf_idf[c][i])
+                        res = res + math.log(tj[c][i])
+                    except KeyError:
+                        t = 1 / (c_size + v_size)
+                        res = res + math.log(t)
+            if isFirst:
+                m = res
+                isFirst = False
+            if res >= m:
+                m = res
+                rc = c
+        if rc == cat:
+            right = right + 1
+    return right
 
 def forecast():
     #种类列表
     cat_list = []
-    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
-    for l in list:
-        cat_list.append(l.split('_')[0])
+    dirs = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    for d in dirs:
+        cat_list.append(d.split('_')[0])
     #加载 tj
     tj = {}
     for cat in cat_list:
@@ -351,47 +372,61 @@ def forecast():
         with open('ndic/'+ cat +'_dic',encoding='utf-8') as f:
             t = eval(f.read())
             dic[cat] = t
+    #加载测试集
     df = pd.read_csv('./temp/temp_test.csv')
     with open('pv',encoding='utf-8') as f:
         pv = eval(f.read())
+
+    #计算总词数
+    v_size = 0
+    v = []
+    for cat in cat_list:
+        v = v + list(dic[cat].keys())
+    v_size = len(set(v))
     
-    print('start')
+    print('start forecast')
+    strat = tu.time()
     size = df.index.size
     right = 0
-    # pool = Pool(12)
-    # manager = Manager()
-    # res_list = []
-    # m_dic = manager.dict(dic)
-    # m_tf_idf = manager.dict(tf_idf)
-    # for i in range(size):
-    #     s = df.iloc[i]['doc']
-    #     c = df.iloc[i]['category']
-    #     res = pool.apply_async(func=cal, args=(s.split(','),c,dic,tf_idf,cat_list,pv,))
-    #     res_list.append(res)
-            
-    # pool.close()
-    # pool.join()        
-    # for r in res_list:
-    #     isR = r.get()
-    #     if isR == True:
-    #         right = right + 1
 
-    for i in range(size):
-        doc = df.iloc[i]['doc'].split(',')
-        c = df.iloc[i]['category']
-        res = cal(doc,c,dic,tj,cat_list,pv)
-        if res:
-            right = right + 1
+    pool = Pool(12)
+    res_list = []
+
+    #任务分解
+    ratio = 10000   #每个进程处理文档数
+    t = size//ratio
+    offset = size-t*ratio
+    print(size)
+    for i in range(t):
+        try:
+            res = pool.apply_async(func=cal, args=(df[i*ratio,(i+1)*ratio],dic,tj,cat_list,pv,v_size,))
+            res_list.append(res)
+        except KeyError:
+            print(i*ratio)
+            print((i+1)*ratio)
+    res = pool.apply_async(func=cal, args=(df[t*ratio,t*ratio+offset],dic,tj,cat_list,pv,v_size,))
+    res_list.append(res)
+    pool.close()
+    pool.join()
+
+
+
+
+    for res in res_list:
+        right = right + res.get()
 
     ratio = right / size
+    end  = tu.time
+    l_time = end - strat
 
     print(ratio)
+    print ('the time is :%s' %l_time)
     
     
 if __name__ == '__main__':
     # partition()
     # pretreatment('test')
-    training(800)
+    # training(200)
     forecast()
     
 

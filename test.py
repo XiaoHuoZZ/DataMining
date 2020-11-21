@@ -11,6 +11,7 @@ from time import sleep
 import os
 import numpy as np
 import FileUtils
+import pandas as pd
 
 
 def f(x):
@@ -20,25 +21,22 @@ def f(x):
 
 
 if __name__ == '__main__':
-    cat_list = []
-    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
-    for l in list:
-        cat_list.append(l.split('_')[0])
-    tj = {}
-    for cat in cat_list:
-        tj[cat] = np.load('./tj/'+ cat + '.npy')
-    print(len(tj[cat]))
+    # cat_list = []
+    # list = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    # for l in list:
+    #     cat_list.append(l.split('_')[0])
+    # tj = {}
+    # for cat in cat_list:
+    #     tj[cat] = np.load('./tj/'+ cat + '.npy')
+    # print(len(tj[cat]))
    
 
     
     
-    # a_dict = {'s':'007', 'b': '003','w':'003','z':'00'}
-    b = {}
-    # print(list(a_dict.keys())) # key 列表
-    # print(list(a_dict.keys())[list(a_dict.values()).index('007')]) # 对应的索引值
-    # print(list(a_dict.keys())[list(a_dict.values()).index('002')])
-
-
+   df = pd.read_csv('./temp/temp_test.csv')
+   d = df.iloc[0:20]
+   for i,row in d.iterrows():
+       print(row['category'])
     
 
 # 结果 
