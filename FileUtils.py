@@ -15,9 +15,15 @@ def convert(file, in_enc="gb18030", out_enc="UTF-8"):
     out_enc = out_enc.upper()
     try:
         print("convert [ " + file.split('\\')[-1] + " ].....From " + in_enc + " --> " + out_enc )
-        f = codecs.open(file, 'r', in_enc)
+        f = codecs.open(file, 'r', in_enc ,errors='ignore')
         new_content = f.read()
         codecs.open(file, 'w', out_enc).write(new_content)
     # print (f.read())
     except IOError as err:
         print("I/O error: {0}".format(err))
+def detect(file):
+    # 我要打开的是二进制的文件，所用的是rb
+    f = open(file,'rb')
+    data = f.read()
+    f.close()
+    return chardet.detect(data)['encoding']

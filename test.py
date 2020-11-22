@@ -21,15 +21,38 @@ def f(x):
 
 
 if __name__ == '__main__':
-    cat_list = []
-    list = os.listdir('./dic') #列出文件夹下所有的目录与文件
-    for l in list:
-        cat_list.append(l.split('_')[0])
-    tj = {}
-    for cat in cat_list:
-        tj[cat] = np.load('./tj/'+ cat + '.npy')
-        print(len(tj[cat]))
-   
+    # cat_list = []
+    # list = os.listdir('./dic') #列出文件夹下所有的目录与文件
+    # for l in list:
+    #     cat_list.append(l.split('_')[0])
+    # tj = {}
+    # for cat in cat_list:
+    #     tj[cat] = np.load('./tj/'+ cat + '.npy')
+    #     print(len(tj[cat]))
+
+    # print('hello')
+    
+    # with open('./temp/temp_test.csv',encoding='utf-8') as f:
+    #     reader = csv.reader(f)
+    #     isF = True
+    #     for row in reader:
+    #         if isF:
+    #             isF = False
+    #             continue
+    #         doc = row[0]
+    #         cat = row[1]
+    #         with open('./test/' + cat +'.csv','a',encoding='utf-8',newline='') as f1:
+    #             writer = csv.writer(f1)
+    #             writer.writerow([doc])
+    #             f1.close()
+    #     f.close()
+    with open('./data/data.csv',encoding='utf-8') as f:
+        reader = csv.reader(f)
+        for i,row in enumerate(reader):
+            if i>5:
+                break
+            print(row)
+    
 
     
     

@@ -14,6 +14,7 @@ import re
 from multiprocessing import Pool,Manager,Lock,Array,Process
 import time as tu
 from functools import partial
+import gc
 
 
 
@@ -39,14 +40,17 @@ def partition():
         te=open('./data/test.csv', 'a', newline='',encoding='utf-8')
         writer1 = csv.writer(tr) 
         writer2 = csv.writer(te)
-        for row in reader:
-            i=random_index([50,50])
-            if i==0:
-                writer1.writerow(row) 
-                train_size = train_size +1
-            else:
-                writer2.writerow(row) 
-                test_size = test_size + 1
+        writer1.writerow(['doc','catebory'])
+        writer2.writerow(['doc','catebory'])
+        for j,row in enumerate(reader):
+            if j != 0 :
+                i=random_index([50,50])
+                if i==0:
+                    writer1.writerow(row) 
+                    train_size = train_size + 1
+                else:
+                    writer2.writerow(row) 
+                    test_size = test_size + 1
         f.close()
         tr.close()
         te.close()
@@ -419,9 +423,10 @@ def forecast():
     
     
 if __name__ == '__main__':
+    csv.field_size_limit(500 * 1024 * 1024)
     # partition()
-    # pretreatment('test')
+    pretreatment('train')
     # training(2000)
-    forecast()
+    # forecast()
     
 

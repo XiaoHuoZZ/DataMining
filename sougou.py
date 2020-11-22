@@ -11,7 +11,9 @@ def sougou_handle(path):
     root = dom.documentElement
     docs = root.getElementsByTagName('doc')
     category = []
+    i = 0
     for doc in docs:
+        i = i + 1
         url = doc.getElementsByTagName('url')[0].firstChild.data
         cty =  re.match(r'http://([0-9a-zA-Z]+)',url).group(1) 
         title_obj = doc.getElementsByTagName('contenttitle')[0].firstChild
@@ -34,6 +36,7 @@ def sougou_handle(path):
             writer = csv.writer(f) 
             writer.writerow(row) 
             f.close 
+    return category,i
 
 def sougou_pre(path):
     with open(path,'r',encoding='utf-8') as f:
@@ -47,26 +50,32 @@ def sougou_pre(path):
     return
 
 rootdir = '.\sougou'
-list = os.listdir(rootdir) #列出文件夹下所有的目录与文件
+dirs = os.listdir(rootdir) #列出文件夹下所有的目录与文件
 
-#转换为utf-8格式
-# for i in range(0,len(list)):
-#     FileUtils.convert(os.path.join(rootdir,list[i]))
+
+
+# 转换为utf-8格式
+# for i in range(0,len(dirs)):
+#     FileUtils.convert(os.path.join(rootdir,dirs[i]),in_enc='gbk')
 
  #首次创建添加表头
 with open('./data/data.csv', 'w', newline='',encoding='utf-8') as f: 
     head = ['category', 'title','content']
     writer = csv.writer(f) 
     writer.writerow(head) 
-    f.close 
+    f.close()
 
 
 
+category = []
+size = 0
 
-
-for i in range(0,len(list)):
-    path = os.path.join(rootdir,list[i])
+for i in range(0,len(dirs)):
+    path = os.path.join(rootdir,dirs[i])
     #更正xml 只能首次
     sougou_pre(path)
-    sougou_handle(path)
-
+    c,s = sougou_handle(path)
+    category = list(set(category + c))
+    size = size + s
+print(category)
+print(size)
