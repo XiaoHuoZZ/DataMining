@@ -7,3 +7,9 @@
 /tf-idf
 /temp
 *.npy
+*.pyc
+/ndic
+/temp_data
+/temp_dic
+/tj
+pv

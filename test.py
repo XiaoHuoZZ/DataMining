@@ -45,11 +45,9 @@ if __name__ == '__main__':
     #             writer.writerow([doc])
     #             f1.close()
     #     f.close()
-    dic = {'a':3}
-    f(dic)
-
-    print(dic)
-    
+    dirs = os.listdir('./data')
+    for d in dirs:
+        print('./data'+d)
 
     
     

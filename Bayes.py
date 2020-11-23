@@ -74,7 +74,7 @@ def handle_fenci(data,stop_list,cat,cat_list,ti):
                 if wd not in stop_list:
                     dic[cat[i]].append(wd)
                     doc.append(wd)
-        docs.append((doc,cat[i]))
+            docs.append((doc,cat[i]))
     joblib.dump(docs,'./temp_data/'+ str(ti) +'.pkl')
     joblib.dump(dic,'./temp_dic/'+ str(ti) +'.pkl')    
     print('done:'+str(ti))
@@ -105,6 +105,7 @@ def handle_bow(cat,dic,cat_list):
                             pass    #如果不存在，则略过
         f.close()
     print('done:'+cat)
+    gc.collect()
     return (cat,bow,idf)
     
 #预处理，包括分词，产生temp目录数据集，dic目录
@@ -163,33 +164,33 @@ def pretreatment(task):
         for cat in cat_list:
             dic[cat] = []
         
-        dirs = os.listdir('./temp_data')
+        dirs = os.listdir('./temp_dic')
+        
         for d in dirs:
-            joblib.load(d)
-
-        for res in res_list:
-            temp = res.get()
+            temp = joblib.load('./temp_dic/' + d)
             for cat in cat_list:
                 nL = dic[cat] + temp[cat]
                 dic[cat] = list(set(nL))  #去重
-        
+            gc.collect()
 
-    
         for cat in cat_list:
             wd_indx = {}    #词字典
             for i,wd in enumerate(dic[cat]):
                 wd_indx[wd] = i
             dic[cat] = wd_indx
+            gc.collect()
         
         #保存分词后的结果
-        for i in range(size):    
-            doc = data[i]
-            cat = category[i]
-            if  doc:           #分词结果大于4的才保存
-                with open('./temp/'+ cat +'.csv','a',encoding='utf-8',newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([','.join(doc)])
-                    f.close()
+        dirs = os.listdir('./temp_data')
+        for d in dirs:
+            docs = joblib.load('./temp_data/' + d)
+            for doc in docs:
+                if doc[0]:
+                    with open('./temp/'+ doc[1] +'.csv','a',encoding='utf-8',newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow([','.join(doc[0])])
+            gc.collect()
+
          #保存字典
         for cat in cat_list:          
             with open('./dic/'+ cat + '_dic','w',encoding='utf-8') as f:
@@ -198,15 +199,17 @@ def pretreatment(task):
 
     elif task == 'test':
         #测试集保存分词结果的格式与训练集不同
+        dirs = os.listdir('./temp_data')
         with open('./temp/temp_test.csv','w',encoding='utf-8',newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['doc','category'])
-            for i in range(size):    
-                doc = data[i]
-                cat = category[i]
-                if  doc :  #分词结果大于4才存
-                    writer.writerow([','.join(doc),cat])
-            f.close()
+            for d in dirs:
+                docs = joblib.load('./temp_data/' + d)
+                for doc in docs:
+                    if doc[0]:
+                        writer.writerow([','.join(doc[0]),doc[1]])
+            gc.collect()
+
        
 
     l_end = tu.time()
@@ -226,7 +229,7 @@ def pretreatment(task):
 def training(n):
     start = tu.time()
     res_list=[]
-    
+    pool = Pool(12)
     #种类列表
     cat_list = []
     dirs = os.listdir('./dic') #列出文件夹下所有的目录与文件
@@ -243,8 +246,6 @@ def training(n):
             dic[cat] = t
     # m_dic = manager.dict(dic)
 
-
-    pool = Pool(12)
     for cat in cat_list:
         res = pool.apply_async(func=handle_bow, args=(cat,dic,cat_list,))
         res_list.append(res)
@@ -370,6 +371,7 @@ def cal(df,dic,tj,cat_list,pv,v_size):
     return right
 
 def forecast():
+    pool = Pool(12)
     #种类列表
     cat_list = []
     dirs = os.listdir('./dic') #列出文件夹下所有的目录与文件
@@ -406,7 +408,7 @@ def forecast():
     right = 0
     print('test size: ' + str(size))
 
-    pool = Pool(12)
+
     res_list = []
 
     #任务分解
