@@ -61,7 +61,7 @@ def partition():
     print('test' + str(test_size))
 
 
-def handle_fenci(data,stop_list,cat,cat_list,ti):
+def handle_jieba(data,stop_list,cat,cat_list,ti):
     docs = []
     dic = {}
     for c in cat_list:
@@ -147,9 +147,9 @@ def pretreatment(task):
     t = size//ratio
     offset = size-t*ratio
     for i in range(t):
-        res = pool.apply_async(func=handle_fenci, args=(data[i*ratio:(i+1)*ratio],stop_list,category[i*ratio:(i+1)*ratio],cat_list,(i+1)*ratio,))
+        res = pool.apply_async(func=handle_jieba, args=(data[i*ratio:(i+1)*ratio],stop_list,category[i*ratio:(i+1)*ratio],cat_list,(i+1)*ratio,))
         res_list.append(res)
-    res = pool.apply_async(func=handle_fenci, args=(data[t*ratio:t*ratio+offset],stop_list,category[t*ratio:t*ratio+offset],cat_list,t*ratio+offset,))
+    res = pool.apply_async(func=handle_jieba, args=(data[t*ratio:t*ratio+offset],stop_list,category[t*ratio:t*ratio+offset],cat_list,t*ratio+offset,))
     res_list.append(res)
     pool.close()
     pool.join()
