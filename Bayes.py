@@ -15,6 +15,7 @@ from multiprocessing import Pool,Manager,Lock,Array,Process
 import time as tu
 from functools import partial
 import gc
+import joblib
 
 
 
@@ -59,21 +60,25 @@ def partition():
     print('test' + str(test_size))
 
 
-def handle_fenci(data,m,n,stop_list,cat,dic):
-    for i in range(m,n):
-        t = data[i]
-        s = re.sub(u'[^\u4e00-\u9fa5|\s]', "", t).replace('\u3000','')
+def handle_fenci(data,stop_list,cat,cat_list,ti):
+    docs = []
+    dic = {}
+    for c in cat_list:
+        dic[c] = []
+    for i,d in enumerate(data):
+        s = re.sub(u'[^\u4e00-\u9fa5|\s]', "", d).replace('\u3000','')
         jlist = jieba.lcut(s, cut_all=False)  #为每个文档分词
         doc = []
-        for wd in jlist:
-            if wd not in stop_list:
-                if len(jlist) > 5:   #分词结果大于5才能加入字典和处理后的结果
+        if len(jlist) > 6:   #分词结果大于5才能加入字典和处理后的结果
+            for wd in jlist:
+                if wd not in stop_list:
                     dic[cat[i]].append(wd)
                     doc.append(wd)
-        # data[i] =  ','.join(doc)
-        data[i] =  doc
-    print('done:'+str(n))
-    return dic
+        docs.append((doc,cat[i]))
+    joblib.dump(docs,'./temp_data/'+ str(ti) +'.pkl')
+    joblib.dump(dic,'./temp_dic/'+ str(ti) +'.pkl')    
+    print('done:'+str(ti))
+    gc.collect()
     
 def handle_bow(cat,dic,cat_list):
     bow = np.zeros(len(dic[cat]),dtype=np.int)
@@ -116,9 +121,9 @@ def pretreatment(task):
             stop_list.append(line.strip('\n'))
         f.close()
     #加载数据
+    data = []
     with open('./data/'+ task +'.csv', 'r',encoding='utf-8') as f:
         reader = csv.reader(f)
-        data = manager.list()
         for i,row in enumerate(reader):
             if i != 0:
                 data.append(row[2])
@@ -140,9 +145,9 @@ def pretreatment(task):
     t = size//ratio
     offset = size-t*ratio
     for i in range(t):
-        res = pool.apply_async(func=handle_fenci, args=(data,i*ratio,(i+1)*ratio,stop_list,category,dic,))
+        res = pool.apply_async(func=handle_fenci, args=(data[i*ratio:(i+1)*ratio],stop_list,category[i*ratio:(i+1)*ratio],cat_list,(i+1)*ratio,))
         res_list.append(res)
-    res = pool.apply_async(func=handle_fenci, args=(data,t*ratio,t*ratio+offset,stop_list,category,dic,))
+    res = pool.apply_async(func=handle_fenci, args=(data[t*ratio:t*ratio+offset],stop_list,category[t*ratio:t*ratio+offset],cat_list,t*ratio+offset,))
     res_list.append(res)
     pool.close()
     pool.join()
@@ -150,17 +155,25 @@ def pretreatment(task):
     print('\n start save')
     l_start = tu.time()
 
+    
+
     if task =='train':
         #取分词结果并按种类保存到dic
         dic = {}
         for cat in cat_list:
             dic[cat] = []
-    
+        
+        dirs = os.listdir('./temp_data')
+        for d in dirs:
+            joblib.load(d)
+
         for res in res_list:
             temp = res.get()
             for cat in cat_list:
                 nL = dic[cat] + temp[cat]
                 dic[cat] = list(set(nL))  #去重
+        
+
     
         for cat in cat_list:
             wd_indx = {}    #词字典

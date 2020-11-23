@@ -15,9 +15,8 @@ import pandas as pd
 
 
 def f(x):
-    i = random.randint(1,5)
-    sleep(i)
-    return print(x)
+    x['a'] = 2
+    
 
 
 if __name__ == '__main__':
@@ -46,12 +45,10 @@ if __name__ == '__main__':
     #             writer.writerow([doc])
     #             f1.close()
     #     f.close()
-    with open('./data/data.csv',encoding='utf-8') as f:
-        reader = csv.reader(f)
-        for i,row in enumerate(reader):
-            if i>5:
-                break
-            print(row)
+    dic = {'a':3}
+    f(dic)
+
+    print(dic)
     
 
     
