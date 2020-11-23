@@ -18,7 +18,24 @@ import gc
 import joblib
 from sklearn.metrics import classification_report
 
-
+def show(path):
+    dic = {}
+    i = 0
+    with open(path,encoding='utf-8') as f:
+        reader = csv.reader(f)
+        isF = True
+        for row in reader:
+            if isF:
+                isF = False
+                continue
+            cat = row[0]
+            try:
+                dic[cat] = dic[cat] + 1
+            except KeyError:
+                dic[cat] = 1
+            i = i+1
+    print(dic)
+    print('size:'+str(i))
 
 def random_index(rate):
     # """随机变量的概率函数"""
@@ -62,6 +79,7 @@ def partition():
 
 
 def handle_jieba(data,stop_list,cat,cat_list,ti):
+    csv.field_size_limit(500 * 1024 * 1024)
     docs = []
     dic = {}
     for c in cat_list:
@@ -82,6 +100,7 @@ def handle_jieba(data,stop_list,cat,cat_list,ti):
     gc.collect()
     
 def handle_bow(cat,dic,cat_list):
+    csv.field_size_limit(500 * 1024 * 1024)
     bow = np.zeros(len(dic[cat]),dtype=np.int)
     idf = {}
     for c in cat_list:
@@ -445,8 +464,15 @@ def predict():
 if __name__ == '__main__':
     csv.field_size_limit(500 * 1024 * 1024)
     # partition()
+    # show('./data/test.csv')
     # pretreatment('test')
     # training(2000)
-    predict()
+    # predict()
+    test = [200,500,1000,1500,3000,4000]
+    for t in test:
+        training(t)
+        print('n:'+str(t))
+        predict()
+        gc.collect()
     
 

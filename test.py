@@ -47,11 +47,51 @@ if __name__ == '__main__':
     #             f1.close()
     #     f.close()
     
-    a = ['2008' ,'women','2008']
-    b = ['2008','women','123']
+    csv.field_size_limit(500 * 1024 * 1024)
+    # sports = 150000
+    # news = 150000
 
-    d = classification_report(a,b)
-    print(d)
+    # fw = open('t.csv','w',encoding='utf-8',newline='')
+    # writer = csv.writer(fw)
+    # l = ['career','mil','cul','travel','learning']
+    # with open('./data.csv',encoding='utf-8') as f:
+    #     reader = csv.reader(f)
+    #     for i,row in enumerate(reader):
+    #         cat = row[0]
+    #         if cat not in l:
+    #             if cat == 'sports' and sports>0:
+    #                 sports = sports - 1
+    #             elif cat == 'news' and news>0:
+    #                 news = news -1
+    #             else:
+    #                 writer.writerow(row)
+
+       
+
+
+    dic = {}
+    i = 0
+    with open('./t.csv',encoding='utf-8') as f:
+        reader = csv.reader(f)
+        isF = True
+        for row in reader:
+            if isF:
+                isF = False
+                continue
+            cat = row[0]
+            try:
+                dic[cat] = dic[cat] + 1
+            except KeyError:
+                dic[cat] = 1
+            i = i+1
+    for k in dic.keys():
+        print(k)
+        print(dic[k])
+    print(i)
+
+
+
+
     
 
 
