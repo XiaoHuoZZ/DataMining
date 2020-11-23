@@ -16,6 +16,7 @@ import time as tu
 from functools import partial
 import gc
 import joblib
+from sklearn.metrics import classification_report
 
 
 
@@ -108,7 +109,7 @@ def handle_bow(cat,dic,cat_list):
     gc.collect()
     return (cat,bow,idf)
     
-#预处理，包括分词，产生temp目录数据集，dic目录
+#预处理，包括分词，产生temp目录数据集，dic目录  
 def pretreatment(task):
     t_start=tu.time()
     res_list=[]
@@ -339,8 +340,9 @@ def training(n):
         f.close
     print('end training')
     
-def cal(df,dic,tj,cat_list,pv,v_size):
-    right = 0
+def handle_pre(df,dic,tj,cat_list,pv,v_size):
+    goal = []  #目标类别
+    pre = []  #预测类别
     for i,row in df.iterrows():
         doc = row[0].split(',')
         cat = row[1]
@@ -365,12 +367,11 @@ def cal(df,dic,tj,cat_list,pv,v_size):
             if res >= m:
                 m = res
                 rc = c
-        if rc == cat:
-            right = right + 1
-    print(right)
-    return right
+        goal.append(cat)
+        pre.append(rc)
+    return goal,pre
 
-def forecast():
+def predict():
     pool = Pool(12)
     #种类列表
     cat_list = []
@@ -402,7 +403,7 @@ def forecast():
         v = v + list(dic[cat].keys())
     v_size = len(set(v))
     
-    print('start forecast')
+    print('start predict')
     start = tu.time()
     size = df.index.size
     right = 0
@@ -416,32 +417,36 @@ def forecast():
     t = size//ratio
     offset = size-t*ratio
     for i in range(t):
-        res = pool.apply_async(func=cal, args=(df[i*ratio:(i+1)*ratio],dic,tj,cat_list,pv,v_size,))
+        res = pool.apply_async(func=handle_pre, args=(df[i*ratio:(i+1)*ratio],dic,tj,cat_list,pv,v_size,))
         res_list.append(res)
-    res = pool.apply_async(func=cal, args=(df[t*ratio:t*ratio+offset],dic,tj,cat_list,pv,v_size,))
+    res = pool.apply_async(func=handle_pre, args=(df[t*ratio:t*ratio+offset],dic,tj,cat_list,pv,v_size,))
     res_list.append(res)
     pool.close()
     pool.join()
 
 
-
+    goal = []
+    pre = []
 
     for res in res_list:
-        right = right + res.get()
+        m,n = res.get()
+        goal = goal + m
+        pre = pre +n
 
-    ratio = right / size
+    report = classification_report(goal,pre)
+
     end  = tu.time()
     l_time = end - start
 
-    print(ratio)
+    print(report)
     print ('the time is :%s' %l_time)
     
     
 if __name__ == '__main__':
     csv.field_size_limit(500 * 1024 * 1024)
     # partition()
-    pretreatment('train')
+    # pretreatment('test')
     # training(2000)
-    # forecast()
+    predict()
     
 

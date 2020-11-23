@@ -12,6 +12,7 @@ import os
 import numpy as np
 import FileUtils
 import pandas as pd
+from sklearn.metrics import classification_report
 
 
 def f(x):
@@ -45,9 +46,14 @@ if __name__ == '__main__':
     #             writer.writerow([doc])
     #             f1.close()
     #     f.close()
-    dirs = os.listdir('./data')
-    for d in dirs:
-        print('./data'+d)
+    
+    a = ['2008' ,'women','2008']
+    b = ['2008','women','123']
+
+    d = classification_report(a,b)
+    print(d)
+    
+
 
     
     
