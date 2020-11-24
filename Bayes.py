@@ -58,8 +58,8 @@ def partition():
         te=open('./data/test.csv', 'a', newline='',encoding='utf-8')
         writer1 = csv.writer(tr) 
         writer2 = csv.writer(te)
-        writer1.writerow(['doc','catebory'])
-        writer2.writerow(['doc','catebory'])
+        writer1.writerow(['category','title','content'])
+        writer2.writerow(['category','title','content'])
         for j,row in enumerate(reader):
             if j != 0 :
                 i=random_index([50,50])
@@ -462,11 +462,11 @@ def predict():
     
 if __name__ == '__main__':
     csv.field_size_limit(500 * 1024 * 1024)
-    # partition()
+    partition()
     # show('./data/test.csv')
     # pretreatment('test')
-    training(3000)
-    predict()
+    # training(3000)
+    # predict()
 
     
 

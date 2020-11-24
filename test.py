@@ -32,23 +32,8 @@ if __name__ == '__main__':
 
     # print('hello')
     
-    # with open('./temp/temp_test.csv',encoding='utf-8') as f:
-    #     reader = csv.reader(f)
-    #     isF = True
-    #     for row in reader:
-    #         if isF:
-    #             isF = False
-    #             continue
-    #         doc = row[0]
-    #         cat = row[1]
-    #         with open('./test/' + cat +'.csv','a',encoding='utf-8',newline='') as f1:
-    #             writer = csv.writer(f1)
-    #             writer.writerow([doc])
-    #             f1.close()
-    #     f.close()
-    
-    csv.field_size_limit(500 * 1024 * 1024)
-    # sports = 150000
+    df = pd.read_csv('./data/train.csv')
+    print(np.unique(df['category']))
     # news = 150000
 
     # fw = open('t.csv','w',encoding='utf-8',newline='')
@@ -69,25 +54,26 @@ if __name__ == '__main__':
        
 
 
-    dic = {}
-    i = 0
-    with open('./t.csv',encoding='utf-8') as f:
-        reader = csv.reader(f)
-        isF = True
-        for row in reader:
-            if isF:
-                isF = False
-                continue
-            cat = row[0]
-            try:
-                dic[cat] = dic[cat] + 1
-            except KeyError:
-                dic[cat] = 1
-            i = i+1
-    for k in dic.keys():
-        print(k)
-        print(dic[k])
-    print(i)
+    # dic = {}
+    # i = 0
+    # with open('./t.csv',encoding='utf-8') as f:
+    #     reader = csv.reader(f)
+    #     isF = True
+    #     for row in reader:
+    #         if isF:
+    #             isF = False
+    #             continue
+    #         cat = row[0]
+    #         try:
+    #             dic[cat] = dic[cat] + 1
+    #         except KeyError:
+    #             dic[cat] = 1
+    #         i = i+1
+    # for k in dic.keys():
+    #     print(k)
+    #     print(dic[k])
+    # print(i)
+
 
 
 
