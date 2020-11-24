@@ -1,6 +1,5 @@
 from math import fabs
 import math
-from os import error, write
 import os
 import jieba
 import numpy as np
@@ -466,13 +465,8 @@ if __name__ == '__main__':
     # partition()
     # show('./data/test.csv')
     # pretreatment('test')
-    # training(2000)
-    # predict()
-    test = [200,500,1000,1500,3000,4000]
-    for t in test:
-        training(t)
-        print('n:'+str(t))
-        predict()
-        gc.collect()
+    training(3000)
+    predict()
+
     
 
