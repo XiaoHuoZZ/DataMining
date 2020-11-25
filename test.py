@@ -21,6 +21,7 @@ def f(x):
 
 
 if __name__ == '__main__':
+    csv.field_size_limit(500 * 1024 * 1024)
     # cat_list = []
     # list = os.listdir('./dic') #列出文件夹下所有的目录与文件
     # for l in list:
@@ -32,31 +33,36 @@ if __name__ == '__main__':
 
     # print('hello')
     
-    df = pd.read_csv('./data/train.csv')
-    print(np.unique(df['category']))
-    # news = 150000
+    # df = pd.read_csv('./data/train.csv')
+    # print(np.unique(df['category']))
 
-    # fw = open('t.csv','w',encoding='utf-8',newline='')
-    # writer = csv.writer(fw)
-    # l = ['career','mil','cul','travel','learning']
-    # with open('./data.csv',encoding='utf-8') as f:
-    #     reader = csv.reader(f)
-    #     for i,row in enumerate(reader):
-    #         cat = row[0]
-    #         if cat not in l:
-    #             if cat == 'sports' and sports>0:
-    #                 sports = sports - 1
-    #             elif cat == 'news' and news>0:
-    #                 news = news -1
-    #             else:
-    #                 writer.writerow(row)
+    news = 100000
+    sports = 70000
+    business = 100000
+
+    fw = open('t.csv','w',encoding='utf-8',newline='')
+    writer = csv.writer(fw)
+    l = ['career','mil','cul','travel','learning']
+    with open('./data/data.csv',encoding='utf-8') as f:
+        reader = csv.reader(f)
+        for i,row in enumerate(reader):
+            cat = row[0]
+            if cat not in l:
+                if cat == 'sports' and sports>0:
+                    sports = sports - 1
+                elif cat == 'news' and news>0:
+                    news = news -1
+                elif cat == 'business' and business>0:
+                    business = business -1
+                else:
+                    writer.writerow(row)
 
        
 
 
     # dic = {}
     # i = 0
-    # with open('./t.csv',encoding='utf-8') as f:
+    # with open('./data/data.csv',encoding='utf-8') as f:
     #     reader = csv.reader(f)
     #     isF = True
     #     for row in reader:
@@ -74,19 +80,4 @@ if __name__ == '__main__':
     #     print(dic[k])
     # print(i)
 
-
-
-
-
-    
-
-
-    
-    
-    
-
-# 结果 
-#[ 1, 2]
-# [1]
-# 2
 

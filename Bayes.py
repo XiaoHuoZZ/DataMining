@@ -16,6 +16,8 @@ from functools import partial
 import gc
 import joblib
 from sklearn.metrics import classification_report
+import shutil
+
 
 def show(path):
     dic = {}
@@ -190,14 +192,14 @@ def pretreatment(task):
             for cat in cat_list:
                 nL = dic[cat] + temp[cat]
                 dic[cat] = list(set(nL))  #去重
-            gc.collect()
+
 
         for cat in cat_list:
             wd_indx = {}    #词字典
             for i,wd in enumerate(dic[cat]):
                 wd_indx[wd] = i
             dic[cat] = wd_indx
-            gc.collect()
+
         
         #保存分词后的结果
         dirs = os.listdir('./temp_data')
@@ -208,7 +210,7 @@ def pretreatment(task):
                     with open('./temp/'+ doc[1] +'.csv','a',encoding='utf-8',newline='') as f:
                         writer = csv.writer(f)
                         writer.writerow([','.join(doc[0])])
-            gc.collect()
+
 
          #保存字典
         for cat in cat_list:          
@@ -227,7 +229,7 @@ def pretreatment(task):
                 for doc in docs:
                     if doc[0]:
                         writer.writerow([','.join(doc[0]),doc[1]])
-            gc.collect()
+
 
        
 
@@ -235,6 +237,11 @@ def pretreatment(task):
     l_time = l_end-l_start
     print ('the save time is :%s' %l_time)
 
+    #删除临时文件
+    shutil.rmtree('./temp_data')
+    os.mkdir('./temp_data/')
+    shutil.rmtree('./temp_dic')
+    os.mkdir('./temp_dic')
 
     t_end=tu.time()
     time=t_end-t_start
@@ -462,11 +469,17 @@ def predict():
     
 if __name__ == '__main__':
     csv.field_size_limit(500 * 1024 * 1024)
-    partition()
-    # show('./data/test.csv')
+    # partition()
+    # show('t.csv')
+    # pretreatment('train')
+    # gc.collect()
     # pretreatment('test')
+    # gc.collect()
     # training(3000)
-    # predict()
+
+    predict()
+
+ 
 
     
 
